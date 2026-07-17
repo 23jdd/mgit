@@ -6,6 +6,8 @@ import (
 	pathpkg "path"
 	"path/filepath"
 	"strings"
+
+	"github.com/23jdd/mgit/repo"
 )
 
 type Rule struct {
@@ -80,12 +82,7 @@ func (m *Matcher) Ignored(absPath string, isDir bool) bool {
 }
 
 func IsInternalName(name string) bool {
-	switch name {
-	case ".git", ".gocache", ".agents", ".codex":
-		return true
-	default:
-		return false
-	}
+	return repo.IsInternalName(name)
 }
 
 func parseRule(line string) (Rule, bool) {

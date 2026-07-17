@@ -6,6 +6,7 @@ import (
 	"fmt"
 	idx "github.com/23jdd/mgit/index"
 	"github.com/23jdd/mgit/object"
+	"github.com/23jdd/mgit/repo"
 	"os"
 	"path/filepath"
 	"sort"
@@ -13,8 +14,8 @@ import (
 	"time"
 )
 
-const stashPath = ".git/stash.json"
-const reflogPath = ".git/logs/HEAD"
+var stashPath = repo.Path("stash.json")
+var reflogPath = repo.Path("logs", "HEAD")
 
 type stashEntry struct {
 	Message string             `json:"message"`

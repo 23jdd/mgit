@@ -6,6 +6,7 @@ import (
 	"github.com/23jdd/mgit/ignore"
 	idx "github.com/23jdd/mgit/index"
 	"github.com/23jdd/mgit/object"
+	"github.com/23jdd/mgit/repo"
 	"os"
 	"path/filepath"
 	"sort"
@@ -21,6 +22,9 @@ func runInit() error {
 		if err := os.MkdirAll(path, 0o755); err != nil {
 			return fmt.Errorf("创建目录失败 %s：%w", path, err)
 		}
+	}
+	if err := repo.Mark(); err != nil {
+		return fmt.Errorf("写入 mgit 标记失败：%w", err)
 	}
 
 	headPath := filepath.Join(myGitDir, "HEAD")
@@ -340,7 +344,7 @@ func runLsFiles(args []string) error {
 func runHashObject(args []string) error {
 	fs := flag.NewFlagSet("hash-object", flag.ContinueOnError)
 	fs.SetOutput(os.Stderr)
-	write := fs.Bool("w", false, "把对象写入 .git/objects")
+	write := fs.Bool("w", false, "把对象写入 mgit 对象库")
 	fs.Usage = func() {
 		fmt.Fprintln(os.Stderr, "用法：mgit hash-object [-w] <文件>")
 	}

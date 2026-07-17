@@ -10,8 +10,21 @@ import (
 )
 
 func defaultSignature() object.Signature {
-	name := firstNonEmpty(os.Getenv("MGIT_AUTHOR_NAME"), os.Getenv("GIT_AUTHOR_NAME"), os.Getenv("USERNAME"), "mgit")
-	email := firstNonEmpty(os.Getenv("MGIT_AUTHOR_EMAIL"), os.Getenv("GIT_AUTHOR_EMAIL"), "mgit@example.local")
+	name := firstNonEmpty(os.Getenv("MGIT_AUTHOR_NAME"), os.Getenv("GIT_AUTHOR_NAME"))
+	if name == "" {
+		if value, ok, err := getConfig(configMerged, "user.name"); err == nil && ok {
+			name = value
+		}
+	}
+	name = firstNonEmpty(name, os.Getenv("USERNAME"), "mgit")
+
+	email := firstNonEmpty(os.Getenv("MGIT_AUTHOR_EMAIL"), os.Getenv("GIT_AUTHOR_EMAIL"))
+	if email == "" {
+		if value, ok, err := getConfig(configMerged, "user.email"); err == nil && ok {
+			email = value
+		}
+	}
+	email = firstNonEmpty(email, "mgit@example.local")
 	return object.NewSignature(name, email, time.Now())
 }
 

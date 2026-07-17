@@ -11,9 +11,10 @@ import (
 
 	"github.com/23jdd/mgit/ignore"
 	"github.com/23jdd/mgit/object"
+	"github.com/23jdd/mgit/repo"
 )
 
-const DefaultPath = ".git/index"
+var DefaultPath = repo.Path("index")
 
 type Entry struct {
 	Mode string `json:"mode"`

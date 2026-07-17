@@ -9,10 +9,13 @@ func printHelp() {
 
 用法：
   mgit init
-      初始化 .git 仓库
+      初始化 mgit 仓库；空目录使用 .git，已有真实 Git 仓库时使用 .mygit
 
   mgit add <路径> [更多路径]
-      把文件写成 blob，并记录到 .git/index
+      把文件写成 blob，并记录到 mgit index
+
+  mgit config [--local|--global] [--list]
+      查看或设置配置，例如 user.name、user.email
 
   mgit rm [--cached] [-r] [-f] <路径> [更多路径]
       从 index 移除路径，并默认删除对应工作区文件

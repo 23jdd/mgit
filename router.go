@@ -13,6 +13,8 @@ func run(args []string) error {
 	switch args[1] {
 	case "init":
 		return runInit()
+	case "config":
+		return runConfig(args[2:])
 	case "add":
 		return runAdd(args[2:])
 	case "rm":

@@ -12,9 +12,11 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/23jdd/mgit/repo"
 )
 
-const ObjectDir = ".git/objects"
+var ObjectDir = repo.Path("objects")
 
 type Object interface {
 	Type() string

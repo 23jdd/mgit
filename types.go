@@ -3,9 +3,11 @@ package main
 import (
 	"fmt"
 	"strings"
+
+	"github.com/23jdd/mgit/repo"
 )
 
-const myGitDir = ".git"
+var myGitDir = repo.Dir()
 
 type stringList []string
 
