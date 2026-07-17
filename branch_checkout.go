@@ -3,12 +3,12 @@ package main
 import (
 	"flag"
 	"fmt"
-	idx "github.com/23jdd/mgit/index"
-	"github.com/23jdd/mgit/object"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
+
+	"github.com/23jdd/mgit/object"
 )
 
 func runBranch(args []string) error {
@@ -214,22 +214,7 @@ func checkoutCommit(commitHash string) error {
 	if err != nil {
 		return err
 	}
-	entries := make([]idx.Entry, 0, len(files))
-	for _, file := range files {
-		blob, err := object.ReadBlob(file.Hash)
-		if err != nil {
-			return err
-		}
-		path := filepath.FromSlash(file.Path)
-		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-			return fmt.Errorf("创建目录失败：%w", err)
-		}
-		if err := os.WriteFile(path, blob.Content, 0o644); err != nil {
-			return fmt.Errorf("写入工作区文件失败 %s：%w", file.Path, err)
-		}
-		entries = append(entries, idx.Entry{Mode: file.Mode, Hash: file.Hash, Path: file.Path})
-	}
-	return idx.Save(idx.DefaultPath, &idx.File{Entries: entries})
+	return writeMergedState(files)
 }
 
 func validateBranchName(name string) error {
