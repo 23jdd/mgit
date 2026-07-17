@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/23jdd/mgit/ignore"
 	"github.com/23jdd/mgit/object"
 )
 
@@ -65,6 +66,10 @@ func AddPaths(root string, paths []string) (*File, []Entry, error) {
 	if err != nil {
 		return nil, nil, fmt.Errorf("解析工作区失败：%w", err)
 	}
+	matcher, err := ignore.Load(rootAbs)
+	if err != nil {
+		return nil, nil, fmt.Errorf("读取 .gitignore 失败：%w", err)
+	}
 
 	file, err := Load(DefaultPath)
 	if err != nil {
@@ -73,9 +78,12 @@ func AddPaths(root string, paths []string) (*File, []Entry, error) {
 
 	added := make([]Entry, 0)
 	for _, path := range paths {
-		entries, rel, err := collectPath(rootAbs, path)
+		entries, rel, err := collectPath(rootAbs, path, matcher)
 		if err != nil {
 			return nil, nil, err
+		}
+		if rel == "" && len(entries) == 0 {
+			continue
 		}
 		file.removePath(rel)
 		added = append(added, entries...)
@@ -134,7 +142,7 @@ func (f *File) merge(entries []Entry) {
 	f.Sort()
 }
 
-func collectPath(rootAbs string, path string) ([]Entry, string, error) {
+func collectPath(rootAbs string, path string, matcher *ignore.Matcher) ([]Entry, string, error) {
 	abs, err := filepath.Abs(path)
 	if err != nil {
 		return nil, "", fmt.Errorf("解析路径失败 %s：%w", path, err)
@@ -152,8 +160,11 @@ func collectPath(rootAbs string, path string) ([]Entry, string, error) {
 	if err != nil {
 		return nil, "", fmt.Errorf("读取路径失败 %s：%w", path, err)
 	}
+	if matcher.Ignored(abs, info.IsDir()) {
+		return nil, "", nil
+	}
 	if info.IsDir() {
-		entries, err := collectDir(rootAbs, abs)
+		entries, err := collectDir(rootAbs, abs, matcher)
 		return entries, rel, err
 	}
 	entry, err := collectFile(rootAbs, abs)
@@ -163,20 +174,19 @@ func collectPath(rootAbs string, path string) ([]Entry, string, error) {
 	return []Entry{entry}, rel, nil
 }
 
-func collectDir(rootAbs string, dir string) ([]Entry, error) {
+func collectDir(rootAbs string, dir string, matcher *ignore.Matcher) ([]Entry, error) {
 	entries := make([]Entry, 0)
 	err := filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
-		name := d.Name()
-		if d.IsDir() && shouldSkip(name) {
-			return filepath.SkipDir
-		}
-		if d.IsDir() {
+		if matcher.Ignored(path, d.IsDir()) {
+			if d.IsDir() {
+				return filepath.SkipDir
+			}
 			return nil
 		}
-		if shouldSkip(name) {
+		if d.IsDir() {
 			return nil
 		}
 		info, err := d.Info()
@@ -226,13 +236,4 @@ func normalizePath(path string) string {
 		return "."
 	}
 	return strings.TrimPrefix(path, "./")
-}
-
-func shouldSkip(name string) bool {
-	switch name {
-	case ".git", ".mygit", ".gocache", ".agents", ".codex":
-		return true
-	default:
-		return false
-	}
 }

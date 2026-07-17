@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+
+	"github.com/23jdd/mgit/ignore"
 )
 
 type TreeEntry struct {
@@ -196,12 +198,21 @@ func listTreeFiles(treeHash string, prefix string, files *[]FileEntry) error {
 	}
 	return nil
 }
+
 func WriteTreeFromDir(root string) (string, *Tree, error) {
 	absRoot, err := filepath.Abs(root)
 	if err != nil {
 		return "", nil, fmt.Errorf("解析目录失败：%w", err)
 	}
-	return writeTree(absRoot, true)
+	worktreeRoot, err := filepath.Abs(".")
+	if err != nil {
+		return "", nil, fmt.Errorf("解析工作区失败：%w", err)
+	}
+	matcher, err := ignore.Load(worktreeRoot)
+	if err != nil {
+		return "", nil, fmt.Errorf("读取 .gitignore 失败：%w", err)
+	}
+	return writeTree(absRoot, true, matcher)
 }
 
 func writeTreeNode(node *treeNode) (string, *Tree, error) {
@@ -232,7 +243,7 @@ func writeTreeNode(node *treeNode) (string, *Tree, error) {
 	return hash, tree, nil
 }
 
-func writeTree(dir string, isRoot bool) (string, *Tree, error) {
+func writeTree(dir string, isRoot bool, matcher *ignore.Matcher) (string, *Tree, error) {
 	items, err := os.ReadDir(dir)
 	if err != nil {
 		return "", nil, fmt.Errorf("读取目录失败：%w", err)
@@ -241,13 +252,13 @@ func writeTree(dir string, isRoot bool) (string, *Tree, error) {
 	entries := make([]TreeEntry, 0, len(items))
 	for _, item := range items {
 		name := item.Name()
-		if shouldSkip(name) {
+		fullPath := filepath.Join(dir, name)
+		if matcher.Ignored(fullPath, item.IsDir()) {
 			continue
 		}
 
-		fullPath := filepath.Join(dir, name)
 		if item.IsDir() {
-			hash, childTree, err := writeTree(fullPath, false)
+			hash, childTree, err := writeTree(fullPath, false, matcher)
 			if err != nil {
 				return "", nil, err
 			}
@@ -295,13 +306,4 @@ func splitPath(path string) []string {
 		return nil
 	}
 	return strings.Split(path, "/")
-}
-
-func shouldSkip(name string) bool {
-	switch name {
-	case ".git", ".mygit", ".gocache", ".agents", ".codex":
-		return true
-	default:
-		return false
-	}
 }

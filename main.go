@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/23jdd/mgit/ignore"
 	idx "github.com/23jdd/mgit/index"
 	"github.com/23jdd/mgit/object"
 )
@@ -351,19 +352,22 @@ func printStatusChanges(changes []statusChange) {
 }
 
 func collectUntrackedFiles(indexMap map[string]diffEntry) ([]string, error) {
+	matcher, err := ignore.Load(".")
+	if err != nil {
+		return nil, fmt.Errorf("读取 .gitignore 失败：%w", err)
+	}
 	untracked := make([]string, 0)
 	if err := filepath.WalkDir(".", func(path string, d os.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
-		name := d.Name()
-		if d.IsDir() && shouldSkipWorktreeName(name) {
-			return filepath.SkipDir
-		}
-		if d.IsDir() {
+		if matcher.Ignored(path, d.IsDir()) {
+			if d.IsDir() {
+				return filepath.SkipDir
+			}
 			return nil
 		}
-		if shouldSkipWorktreeName(name) {
+		if d.IsDir() {
 			return nil
 		}
 		info, err := d.Info()
@@ -387,15 +391,6 @@ func collectUntrackedFiles(indexMap map[string]diffEntry) ([]string, error) {
 	}
 	sort.Strings(untracked)
 	return untracked, nil
-}
-
-func shouldSkipWorktreeName(name string) bool {
-	switch name {
-	case ".git", ".mygit", ".gocache", ".agents", ".codex":
-		return true
-	default:
-		return false
-	}
 }
 func runLsFiles(args []string) error {
 	fs := flag.NewFlagSet("ls-files", flag.ContinueOnError)
