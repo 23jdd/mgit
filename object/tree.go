@@ -159,6 +159,43 @@ func WriteTreeFromFiles(files []FileEntry) (string, *Tree, error) {
 	return writeTreeNode(root)
 }
 
+func ListTreeFiles(treeHash string) ([]FileEntry, error) {
+	if err := ValidateHash(treeHash); err != nil {
+		return nil, fmt.Errorf("无效 tree 哈希：%w", err)
+	}
+	files := make([]FileEntry, 0)
+	if err := listTreeFiles(treeHash, "", &files); err != nil {
+		return nil, err
+	}
+	sort.Slice(files, func(i, j int) bool {
+		return files[i].Path < files[j].Path
+	})
+	return files, nil
+}
+
+func listTreeFiles(treeHash string, prefix string, files *[]FileEntry) error {
+	tree, err := ReadTree(treeHash)
+	if err != nil {
+		return err
+	}
+	for _, entry := range tree.Entries {
+		path := entry.Name
+		if prefix != "" {
+			path = prefix + "/" + entry.Name
+		}
+		switch entry.ObjectType {
+		case "blob":
+			*files = append(*files, FileEntry{Mode: entry.Mode, Path: path, Hash: entry.Hash})
+		case "tree":
+			if err := listTreeFiles(entry.Hash, path, files); err != nil {
+				return err
+			}
+		default:
+			return fmt.Errorf("不支持的 tree 条目类型：%s", entry.ObjectType)
+		}
+	}
+	return nil
+}
 func WriteTreeFromDir(root string) (string, *Tree, error) {
 	absRoot, err := filepath.Abs(root)
 	if err != nil {
