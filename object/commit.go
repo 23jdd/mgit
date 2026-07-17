@@ -3,6 +3,7 @@ package object
 import (
 	"bytes"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -155,9 +156,39 @@ func parseSignature(raw string) Signature {
 	if !found {
 		return NewSignature(raw, "", time.Time{})
 	}
-	email, _, found := strings.Cut(rest, "> ")
+	email, tail, found := strings.Cut(rest, "> ")
 	if !found {
 		return NewSignature(namePart, strings.TrimSuffix(rest, ">"), time.Time{})
 	}
-	return NewSignature(namePart, email, time.Time{})
+	fields := strings.Fields(tail)
+	when := time.Time{}
+	if len(fields) >= 2 {
+		unixSeconds, err := strconv.ParseInt(fields[0], 10, 64)
+		if err == nil {
+			offset := parseTimezoneOffset(fields[1])
+			when = time.Unix(unixSeconds, 0).In(time.FixedZone(fields[1], offset))
+		}
+	}
+	return NewSignature(namePart, email, when)
+}
+
+func parseTimezoneOffset(value string) int {
+	if len(value) != 5 {
+		return 0
+	}
+	sign := 1
+	if value[0] == '-' {
+		sign = -1
+	} else if value[0] != '+' {
+		return 0
+	}
+	hours, err := strconv.Atoi(value[1:3])
+	if err != nil {
+		return 0
+	}
+	minutes, err := strconv.Atoi(value[3:5])
+	if err != nil {
+		return 0
+	}
+	return sign * ((hours * 3600) + (minutes * 60))
 }
