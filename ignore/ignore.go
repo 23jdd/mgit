@@ -81,7 +81,7 @@ func (m *Matcher) Ignored(absPath string, isDir bool) bool {
 
 func IsInternalName(name string) bool {
 	switch name {
-	case ".git", ".mygit", ".gocache", ".agents", ".codex":
+	case ".git", ".gocache", ".agents", ".codex":
 		return true
 	default:
 		return false

@@ -13,7 +13,7 @@ import (
 	"github.com/23jdd/mgit/object"
 )
 
-const DefaultPath = ".mygit/index"
+const DefaultPath = ".git/index"
 
 type Entry struct {
 	Mode string `json:"mode"`

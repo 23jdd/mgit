@@ -14,7 +14,7 @@ import (
 	"strings"
 )
 
-const ObjectDir = ".mygit/objects"
+const ObjectDir = ".git/objects"
 
 type Object interface {
 	Type() string
