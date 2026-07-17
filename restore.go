@@ -8,7 +8,6 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
-	"strings"
 )
 
 func runRestore(args []string) error {
@@ -87,15 +86,10 @@ func restoreFromCommit(commitHash string, paths []string, restoreWorktree bool, 
 }
 
 func selectRestoreFiles(files []object.FileEntry, paths []string) ([]object.FileEntry, []string, error) {
-	pathspecs := make([]string, 0, len(paths))
-	for _, path := range paths {
-		pathspec := normalizeWorktreePath(path)
-		if pathspec == "" {
-			return nil, nil, fmt.Errorf("restore 路径不能为空")
-		}
-		pathspecs = append(pathspecs, pathspec)
+	pathspecs, err := normalizeWorktreePaths("restore", paths)
+	if err != nil {
+		return nil, nil, err
 	}
-
 	selected := make([]object.FileEntry, 0)
 	matched := make([]bool, len(pathspecs))
 	for _, file := range files {
@@ -157,22 +151,4 @@ func restoreIndexEntries(files []object.FileEntry, pathspecs []string) error {
 	}
 	indexFile.Sort()
 	return idx.Save(idx.DefaultPath, indexFile)
-}
-
-func normalizeWorktreePath(path string) string {
-	path = filepath.ToSlash(filepath.Clean(path))
-	path = strings.TrimPrefix(path, "./")
-	if path == "." {
-		return "."
-	}
-	return strings.Trim(path, "/")
-}
-
-func restorePathMatches(filePath string, pathspec string) bool {
-	filePath = normalizeWorktreePath(filePath)
-	pathspec = normalizeWorktreePath(pathspec)
-	if pathspec == "." {
-		return true
-	}
-	return filePath == pathspec || strings.HasPrefix(filePath, pathspec+"/")
 }

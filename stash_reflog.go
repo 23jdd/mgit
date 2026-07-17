@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -294,11 +295,18 @@ func trackedWorktreeFiles(entries []idx.Entry) ([]object.FileEntry, error) {
 }
 
 func parseStashIndex(value string) (int, error) {
-	value = strings.TrimSpace(value)
-	value = strings.TrimPrefix(value, "stash@{")
-	value = strings.TrimSuffix(value, "}")
-	var index int
-	if _, err := fmt.Sscanf(value, "%d", &index); err != nil {
+	raw := strings.TrimSpace(value)
+	if strings.HasPrefix(raw, "stash@{") {
+		if !strings.HasSuffix(raw, "}") {
+			return 0, fmt.Errorf("无效 stash 编号：%s", value)
+		}
+		raw = strings.TrimSuffix(strings.TrimPrefix(raw, "stash@{"), "}")
+	}
+	if raw == "" {
+		return 0, fmt.Errorf("无效 stash 编号：%s", value)
+	}
+	index, err := strconv.Atoi(raw)
+	if err != nil || index < 0 {
 		return 0, fmt.Errorf("无效 stash 编号：%s", value)
 	}
 	return index, nil

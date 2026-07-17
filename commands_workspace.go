@@ -89,13 +89,9 @@ func runRm(args []string) error {
 	if err != nil {
 		return err
 	}
-	pathspecs := make([]string, 0, fs.NArg())
-	for _, arg := range fs.Args() {
-		pathspec := normalizeWorktreePath(arg)
-		if pathspec == "" {
-			return fmt.Errorf("rm 路径不能为空")
-		}
-		pathspecs = append(pathspecs, pathspec)
+	pathspecs, err := normalizeWorktreePaths("rm", fs.Args())
+	if err != nil {
+		return err
 	}
 
 	matchedSpecs := make([]bool, len(pathspecs))
